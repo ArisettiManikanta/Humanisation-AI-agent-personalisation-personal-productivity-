@@ -11,11 +11,15 @@ Autonomous Visual & Conversational Shopping Agent:
 
 import os
 import io
+import importlib
 import requests
 import streamlit as st
 import pandas as pd
 from PIL import Image
 from dotenv import load_dotenv
+
+import agent as agent_module
+importlib.reload(agent_module)
 from agent import PersonalizedShoppingAgent, UserProfile
 
 # Load environment
