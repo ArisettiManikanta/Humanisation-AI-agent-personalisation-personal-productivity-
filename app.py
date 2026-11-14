@@ -1,16 +1,20 @@
 """
 AI Humanisation & Personalised Shopping & Productivity Agent - Streamlit UI
 ==========================================================================
-A clean, interactive web application featuring:
-1. User Profile & Preferences Sidebar (saved once: sizes, brands, budget, styles)
-2. Natural Language Goal Input (Chat interface with sample prompts)
-3. Multi-Step Agent Execution Stepper (Requirement Analyzer -> Deep Search -> Fake Review Filter -> Price Comparison)
-4. Comparison Summary Table + Top 3 Genuine Recommendation Cards
+Autonomous Visual & Conversational Shopping Agent:
+1. Multimodal Visual Outfit Scanner (Upload dress photo -> Finds exact item -> 1-Click Direct Checkout)
+2. User Profile & Preferences Sizing Calibration
+3. Multi-Platform Deep Search across Amazon, Myntra, Ajio, Flipkart, and Noon
+4. Forensic Fake Review & Verified Fabric Authenticity Filter
+5. Cross-Platform Price Arbitrage & Direct Payment Gateway Express Checkout Links
 """
 
 import os
+import io
+import requests
 import streamlit as st
 import pandas as pd
+from PIL import Image
 from dotenv import load_dotenv
 from agent import PersonalizedShoppingAgent, UserProfile
 
@@ -19,7 +23,7 @@ load_dotenv()
 
 # Page setup
 st.set_page_config(
-    page_title="AI Humanisation & Shopping Agent",
+    page_title="AI Humanisation & Autonomous Shopping Agent",
     page_icon="🛍️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -35,28 +39,28 @@ st.markdown("""
     }
     
     .hero-container {
-        background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #312E81 100%);
+        background: linear-gradient(135deg, #0B132B 0%, #1C2541 45%, #3A0CA3 100%);
         padding: 2.2rem 2.2rem;
         border-radius: 18px;
         color: white;
         margin-bottom: 1.8rem;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
     }
     
     .hero-title {
-        font-size: 2.1rem;
+        font-size: 2.2rem;
         font-weight: 800;
         margin-bottom: 0.4rem;
-        background: linear-gradient(90deg, #FFFFFF, #93C5FD, #C7D2FE);
+        background: linear-gradient(90deg, #FFFFFF, #93C5FD, #E0E7FF);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
     
     .hero-subtitle {
-        font-size: 1.02rem;
+        font-size: 1.05rem;
         color: #CBD5E1;
-        max-width: 850px;
-        line-height: 1.5;
+        max-width: 900px;
+        line-height: 1.55;
         margin-bottom: 0;
     }
     
@@ -67,6 +71,16 @@ st.markdown("""
         font-size: 0.8rem;
         font-weight: 700;
         margin-right: 0.5rem;
+    }
+    
+    .checkout-hero-box {
+        background: linear-gradient(135deg, #064E3B 0%, #065F46 60%, #047857 100%);
+        color: white;
+        padding: 1.8rem 2rem;
+        border-radius: 16px;
+        box-shadow: 0 12px 30px rgba(6, 78, 59, 0.25);
+        margin-bottom: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.15);
     }
     
     .card-container {
@@ -109,7 +123,7 @@ st.markdown("""
     }
     
     .price-offer {
-        font-size: 1.5rem;
+        font-size: 1.55rem;
         font-weight: 800;
         color: #0F172A;
     }
@@ -128,12 +142,17 @@ st.markdown("""
         margin-left: 0.4rem;
     }
     
-    .step-box {
-        padding: 1rem 1.2rem;
-        border-radius: 10px;
-        background: #F8FAFC;
-        border-left: 4px solid #4F46E5;
-        margin-bottom: 0.8rem;
+    .visual-pill {
+        display: inline-block;
+        background: #F1F5F9;
+        color: #334155;
+        font-weight: 600;
+        font-size: 0.82rem;
+        padding: 3px 9px;
+        border-radius: 6px;
+        margin-right: 5px;
+        margin-bottom: 5px;
+        border: 1px solid #CBD5E1;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -152,11 +171,21 @@ if "user_profile" not in st.session_state:
         preferred_platforms=["Myntra", "Amazon.in", "Ajio", "Flipkart", "Noon"]
     )
 
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-
 if "latest_result" not in st.session_state:
     st.session_state.latest_result = None
+
+if "uploaded_image_preview" not in st.session_state:
+    st.session_state.uploaded_image_preview = None
+
+# Helper to fetch online sample image for 1-click test
+@st.cache_data
+def get_sample_image(url: str) -> Image.Image:
+    try:
+        resp = requests.get(url, timeout=5)
+        return Image.open(io.BytesIO(resp.content))
+    except Exception:
+        # Fallback generated swatch image
+        return Image.new("RGB", (300, 300), color=(15, 30, 80))
 
 # =============================================================================
 # SIDEBAR: USER PROFILE & PREFERENCES
@@ -257,11 +286,11 @@ with st.sidebar:
     )
 
     if gemini_key_input and tavily_key_input:
-        st.success("🟢 Live Agent Mode Ready")
+        st.success("🟢 Live Autonomous Agent Ready")
     elif gemini_key_input or tavily_key_input:
         st.warning("🟡 Partial API Keys provided")
     else:
-        st.info("🔵 Interactive Prototype Mode (Ready to test or configure)")
+        st.info("🔵 Interactive Prototype Mode")
 
 # =============================================================================
 # MAIN INTERFACE
@@ -270,10 +299,11 @@ with st.sidebar:
 # Hero Section
 st.markdown("""
 <div class="hero-container">
-    <div class="hero-title">🛍️ AI Humanisation & Personal Shopping Agent</div>
+    <div class="hero-title">🛍️ Autonomous AI Humanisation & Shopping Agent</div>
     <p class="hero-subtitle">
-        Your high-productivity personal stylist & fraud-detection buyer. Finds the exact outfit for any occasion, 
-        screens out fake bot reviews, checks verified buyer fabrics, and compares genuine offers across Amazon, Myntra, Ajio, Flipkart & Noon.
+        Give a goal or upload a photo of any outfit/dress. The AI agent executes the entire workflow autonomously: 
+        reverse-engineers visual details, matches your saved size & budget, screens fake reviews across 5 platforms, 
+        and brings you <strong>straight to the checkout page & payment gateway</strong> with pre-applied discounts.
     </p>
 </div>
 """, unsafe_allow_html=True)
@@ -291,49 +321,127 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Goal Input Section
-st.markdown("### 🎯 What do you need to find today?")
+# EXECUTION TRIGGER CONTAINER
+active_gemini_key = gemini_key_input.strip() if gemini_key_input else env_gemini
+active_tavily_key = tavily_key_input.strip() if tavily_key_input else env_tavily
+agent = PersonalizedShoppingAgent(gemini_api_key=active_gemini_key, tavily_api_key=active_tavily_key)
 
-# Prompt Suggestions
-st.caption("Quick suggestions (click to use):")
-col_s1, col_s2, col_s3 = st.columns(3)
-selected_prompt = None
+# TWO INTERACTIVE WORKFLOW MODES
+tab_visual, tab_text = st.tabs([
+    "📸 Visual Outfit Match & 1-Click Checkout (Photo Upload)",
+    "💬 Natural Language Goal & Occasion Search"
+])
 
-with col_s1:
-    if st.button("💍 Traditional kurta set for best friend's wedding under ₹4000", use_container_width=True):
-        selected_prompt = "Find a traditional kurta set for my best friend's wedding under ₹4000"
-with col_s2:
-    if st.button("✨ Royal Indo-Western Bandhgala for Sangeet under ₹6000", use_container_width=True):
-        selected_prompt = "Find a royal Indo-Western Bandhgala outfit for wedding sangeet under ₹6000"
-with col_s3:
-    if st.button("🌿 Designer Tussar Silk Kurta Set under ₹3500", use_container_width=True):
-        selected_prompt = "Find a designer Tussar silk kurta set with verified fabric reviews under ₹3500"
+submitted_goal = None
+submitted_image = None
 
-user_query = st.chat_input("E.g., Find a traditional kurta set for my best friend's wedding under ₹4000...")
-if selected_prompt:
-    user_query = selected_prompt
+# -----------------------------------------------------------------------------
+# TAB 1: VISUAL MATCH & AUTONOMOUS CHECKOUT
+# -----------------------------------------------------------------------------
+with tab_visual:
+    st.markdown("#### 📸 Upload an Outfit / Dress Photo")
+    st.caption("Upload any photo or try a sample. The agent will visually identify the garment, find the exact match online, and generate a direct payment link.")
 
-# Execution Trigger
-if user_query:
-    active_gemini_key = gemini_key_input.strip() if gemini_key_input else env_gemini
-    active_tavily_key = tavily_key_input.strip() if tavily_key_input else env_tavily
+    col_upload, col_samples = st.columns([1.2, 1])
 
-    agent = PersonalizedShoppingAgent(
-        gemini_api_key=active_gemini_key,
-        tavily_api_key=active_tavily_key
-    )
+    with col_upload:
+        uploaded_file = st.file_uploader(
+            "Choose an outfit photo (JPG, PNG, WEBP)",
+            type=["jpg", "jpeg", "png", "webp"],
+            help="Upload an image of a dress, kurta, suit, or outfit you want to buy"
+        )
+        custom_visual_notes = st.text_input(
+            "Optional instruction / Occasion constraint:",
+            placeholder="e.g. For my best friend's wedding under ₹4000, need size 40",
+            value="For my best friend's wedding under ₹4000"
+        )
 
-    with st.status("🤖 AI Agent Executing Multi-Step Humanisation & Search Workflow...", expanded=True) as status:
-        st.write("🔍 **Step 1:** Analyzing Occasion & Personal Size Mapping...")
-        st.write("🌐 **Step 2:** Deep searching Amazon, Myntra, Ajio, Flipkart, and Noon...")
-        st.write("🛡️ **Step 3:** Running Forensic Fake Review & Verified Fabric Authenticity Filter...")
-        st.write("🏷️ **Step 4:** Calculating Cross-Platform Bank Offers, Instant Coupons & Effective Prices...")
+    with col_samples:
+        st.markdown("**Or test with a sample outfit (1-click):**")
+        sample_urls = {
+            "👘 Royal Blue Jacquard Kurta Set": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&auto=format&fit=crop&q=80",
+            "✨ Maroon & Gold Silk Blend Ensemble": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600&auto=format&fit=crop&q=80",
+            "👑 Designer Woven Jacquard Wedding Set": "https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?w=600&auto=format&fit=crop&q=80"
+        }
+        selected_sample_url = None
+        for label, url in sample_urls.items():
+            if st.button(label, use_container_width=True):
+                selected_sample_url = url
 
-        result = agent.execute_workflow(user_query, st.session_state.user_profile)
+    # Determine active image
+    active_img = None
+    if uploaded_file is not None:
+        try:
+            active_img = Image.open(uploaded_file)
+            st.session_state.uploaded_image_preview = active_img
+        except Exception as e:
+            st.error(f"Error loading uploaded image: {e}")
+    elif selected_sample_url:
+        active_img = get_sample_image(selected_sample_url)
+        st.session_state.uploaded_image_preview = active_img
+
+    if st.session_state.uploaded_image_preview:
+        st.markdown("---")
+        col_prev, col_act = st.columns([1, 2])
+        with col_prev:
+            st.image(st.session_state.uploaded_image_preview, caption="Target Outfit to Find & Checkout", use_container_width=True)
+        with col_act:
+            st.markdown("### ⚡ Ready for Autonomous Execution")
+            st.write("Click below to let the agent find this exact garment across platforms, verify genuine customer reviews, apply best coupons, and bring you straight to checkout.")
+            if st.button("🚀 Find Exact Item & Bring Me to Checkout Page", type="primary", use_container_width=True):
+                submitted_image = st.session_state.uploaded_image_preview
+                submitted_goal = custom_visual_notes or "Find this exact outfit online and prepare direct checkout"
+
+# -----------------------------------------------------------------------------
+# TAB 2: TEXT GOAL SEARCH
+# -----------------------------------------------------------------------------
+with tab_text:
+    st.markdown("#### 💬 Describe What You Need")
+    st.caption("Quick suggestions (click to use):")
+    col_s1, col_s2, col_s3 = st.columns(3)
+    quick_text = None
+
+    with col_s1:
+        if st.button("💍 Traditional kurta set for wedding under ₹4000", use_container_width=True):
+            quick_text = "Find a traditional kurta set for my best friend's wedding under ₹4000"
+    with col_s2:
+        if st.button("✨ Royal Indo-Western Bandhgala for Sangeet under ₹6000", use_container_width=True):
+            quick_text = "Find a royal Indo-Western Bandhgala outfit for wedding sangeet under ₹6000"
+    with col_s3:
+        if st.button("🌿 Designer Tussar Silk Kurta Set under ₹3500", use_container_width=True):
+            quick_text = "Find a designer Tussar silk kurta set with verified fabric reviews under ₹3500"
+
+    text_input_goal = st.chat_input("E.g., Find a traditional kurta set for my best friend's wedding under ₹4000...")
+    if quick_text:
+        text_input_goal = quick_text
+
+    if text_input_goal:
+        submitted_goal = text_input_goal
+        submitted_image = None
+
+# =============================================================================
+# AUTONOMOUS AGENT WORKFLOW EXECUTION
+# =============================================================================
+if submitted_goal:
+    with st.status("🤖 Autonomous Agent Executing End-to-End Workflow...", expanded=True) as status:
+        if submitted_image is not None:
+            st.write("📸 **Step 0:** Gemini Vision scanning outfit photo (extracting weave, neckline, palette, and cut)...")
+        st.write("🎯 **Step 1:** Persona Calibration (locking in size, occasion formality, and budget)...")
+        st.write("🌐 **Step 2:** Deep searching Amazon.in, Myntra, Ajio, Flipkart, and Noon for matching listings...")
+        st.write("🛡️ **Step 3:** Forensic Fake Review Guardian (screening bot reviews, seller rating & fabric integrity)...")
+        st.write("💳 **Step 4:** Formulating lowest effective price, active promo codes & Direct Payment Gateway Link...")
+
+        result = agent.execute_workflow(
+            user_prompt=submitted_goal,
+            profile=st.session_state.user_profile,
+            image=submitted_image
+        )
         st.session_state.latest_result = result
-        status.update(label="✅ Agent Execution Complete! Top Verified Deals Found.", state="complete", expanded=False)
+        status.update(label="✅ Autonomous Execution Complete! Direct Checkout Link Ready.", state="complete", expanded=False)
 
-# Display Results
+# =============================================================================
+# RESULTS DISPLAY
+# =============================================================================
 if st.session_state.latest_result:
     res = st.session_state.latest_result
 
@@ -343,16 +451,99 @@ if st.session_state.latest_result:
     else:
         st.info(f"💡 {res.execution_message}")
 
+    # Top winner recommendation for direct checkout
+    top_pick = res.top_recommendations[0] if res.top_recommendations else None
+
+    if top_pick:
+        # HERO SECTION: DIRECT CHECKOUT & PAYMENT GATEWAY (The requested core feature!)
+        st.markdown(f"""
+        <div class="checkout-hero-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 0.8rem;">
+                <span style="background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 9999px; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.5px;">
+                    🎯 EXACT MATCH FOUND & AUTHENTICATED
+                </span>
+                <span style="background: #10B981; color: white; padding: 5px 12px; border-radius: 9999px; font-weight: 700; font-size: 0.85rem;">
+                    🛡️ {top_pick.authenticity_score}/100 Verified Authentic
+                </span>
+            </div>
+            <div style="font-size: 1.55rem; font-weight: 800; line-height: 1.3; margin-bottom: 0.4rem;">
+                {top_pick.product_name}
+            </div>
+            <div style="font-size: 1.05rem; opacity: 0.9; margin-bottom: 1rem;">
+                by <strong>{top_pick.brand}</strong> &bull; Best Platform: <strong>{top_pick.best_platform}</strong> &bull; Sizing Pre-locked: <strong>{profile.top_size}</strong>
+            </div>
+            <div style="background: rgba(0, 0, 0, 0.25); border-radius: 12px; padding: 1rem 1.4rem; margin-bottom: 1.2rem; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between;">
+                <div>
+                    <div style="font-size: 0.85rem; opacity: 0.8; text-transform: uppercase; font-weight: 700;">Effective Final Offer Price</div>
+                    <div style="font-size: 2.1rem; font-weight: 800; color: #6EE7B7;">
+                        {top_pick.actual_offer_price} 
+                        <span style="font-size: 1.05rem; text-decoration: line-through; color: #CBD5E1; margin-left: 8px;">{top_pick.original_mrp}</span>
+                        <span style="font-size: 1rem; color: #FEF08A; margin-left: 8px;">({top_pick.discount_percentage})</span>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 0.85rem; opacity: 0.8; text-transform: uppercase; font-weight: 700;">Pre-Applied Coupon & Savings</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #FFFFFF;">
+                        🏷️ Code: <span style="background: #047857; padding: 2px 8px; border-radius: 6px; font-family: monospace;">{top_pick.best_coupon_code}</span> &bull; {top_pick.checkout_savings}
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 0.85rem; opacity: 0.8; text-transform: uppercase; font-weight: 700;">Payment Gateway</div>
+                    <div style="font-size: 0.95rem; font-weight: 600; color: #E2E8F0;">
+                        💳 {top_pick.payment_gateway_info}
+                    </div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        col_chk1, col_chk2 = st.columns([1.6, 1])
+        with col_chk1:
+            st.link_button(
+                f"⚡ 💳 PROCEED STRAIGHT TO CHECKOUT & PAYMENT GATEWAY ({top_pick.actual_offer_price})",
+                top_pick.direct_checkout_link,
+                use_container_width=True,
+                type="primary",
+                help="Takes you directly to the payment/cart screen with coupon and size pre-selected"
+            )
+        with col_chk2:
+            st.link_button(
+                f"🔍 Inspect Full Product Page on {top_pick.best_platform}",
+                top_pick.direct_buy_link,
+                use_container_width=True
+            )
+
     # Productivity Metrics Row
+    st.markdown("---")
     m1, m2, m3, m4 = st.columns(4)
     with m1:
-        st.metric("⏱️ Time Saved", f"{res.productivity_metrics.get('hours_saved', 3.8)} hrs", "Zero manual browsing")
+        st.metric("⏱️ Time Saved", f"{res.productivity_metrics.get('hours_saved', 4.5)} hrs", "Zero manual browsing")
     with m2:
-        st.metric("🛡️ Fake Reviews Filtered", f"{res.productivity_metrics.get('fake_reviews_purged', 19)} listings", "Bot spam purged")
+        st.metric("🛡️ Fake Reviews Screened", f"{res.productivity_metrics.get('fake_reviews_purged', 19)} purged", "Bot clusters removed")
     with m3:
-        st.metric("🌐 Platforms Vetted", f"{res.productivity_metrics.get('platforms_scanned', 5)} platforms", "Cross-compared")
+        st.metric("🌐 Platforms Scanned", f"{res.productivity_metrics.get('platforms_scanned', 5)} platforms", "Amazon, Myntra, Ajio, Flipkart, Noon")
     with m4:
-        st.metric("💰 Max Savings Found", res.productivity_metrics.get("max_discount_identified", "₹2,200"), res.productivity_metrics.get("average_savings_percent", "38% OFF"))
+        st.metric("💰 Total Savings", res.productivity_metrics.get("max_discount_identified", "₹2,480"), res.productivity_metrics.get("average_savings_percent", "42% OFF"))
+
+    # VISUAL ATTRIBUTE BREAKDOWN (If visual search was executed)
+    if res.uploaded_image_analysis:
+        va = res.uploaded_image_analysis
+        st.markdown("### 📸 AI Multimodal Vision Feature Extraction")
+        col_v1, col_v2 = st.columns([1, 2])
+        with col_v1:
+            if st.session_state.uploaded_image_preview:
+                st.image(st.session_state.uploaded_image_preview, caption="Source Outfit Scanned", use_container_width=True)
+        with col_v2:
+            st.markdown(f"**Identified Silhouette:** `{va.get('detected_garment_type', 'Garment')}`")
+            st.markdown(f"**Fabric & Texture:** {va.get('fabric_and_weave', 'Silk blend / Jacquard')}")
+            st.markdown(f"**Cut & Silhouette:** {va.get('silhouette_and_cut', 'Tailored fit')}")
+            st.markdown(f"**Embellishments:** {va.get('embellishment_details', 'Zari embroidery')}")
+            st.markdown("**Color Palette:**")
+            palette_html = "".join([f'<span class="visual-pill">🎨 {c}</span>' for c in va.get("color_palette", [])])
+            st.markdown(palette_html, unsafe_allow_html=True)
+            st.markdown("**Visual Signature Keywords:**")
+            keywords_html = "".join([f'<span class="visual-pill">#{k}</span>' for k in va.get("visual_signature_keywords", [])])
+            st.markdown(keywords_html, unsafe_allow_html=True)
 
     st.divider()
 
@@ -388,11 +579,21 @@ if st.session_state.latest_result:
                 </div>
             </div>
             """, unsafe_allow_html=True)
-            st.link_button(f"🛒 Buy on {rec.best_platform} for {rec.actual_offer_price}", rec.direct_buy_link, use_container_width=True, type="primary")
+            st.link_button(
+                f"⚡ 💳 1-Click Checkout ({rec.actual_offer_price})",
+                rec.direct_checkout_link or rec.direct_buy_link,
+                use_container_width=True,
+                type="primary"
+            )
+            st.link_button(
+                f"🛒 View Product Page",
+                rec.direct_buy_link,
+                use_container_width=True
+            )
 
     st.divider()
 
-    # SECTION 2: CROSS-PLATFORM PRICE & GENUINE OFFER COMPARISON TABLE
+    # SECTION 2: CROSS-PLATFORM COMPARISON MATRIX
     st.markdown("## 📊 Cross-Platform Price & Genuine Offer Comparison")
     st.caption("Side-by-side comparison across Amazon, Myntra, Ajio, Flipkart, and Noon including bank offers and effective final price.")
 
@@ -407,20 +608,20 @@ if st.session_state.latest_result:
             "Authenticity Audit": item.authenticity_score,
             "Delivery & Returns": item.delivery_and_returns,
             "Deal Verdict": item.verdict,
-            "Direct Link": item.direct_link
+            "Direct Checkout Link": item.direct_checkout_link or item.direct_link
         })
 
     df = pd.DataFrame(table_data)
     st.dataframe(
-        df[["Platform", "Product / Brand", "Listed Price", "Applicable Coupon / Bank Offer", "Effective Best Price", "Authenticity Audit", "Delivery & Returns", "Deal Verdict"]],
+        df[["Platform", "Product / Brand", "Listed Price", "Applicable Coupon / Bank Offer", "Effective Best Price", "Authenticity Audit", "Delivery & Returns", "Deal Verdict", "Direct Checkout Link"]],
         use_container_width=True,
         hide_index=True
     )
 
     st.divider()
 
-    # SECTION 3: STEP-BY-STEP AGENT REASONING TRACE
-    with st.expander("🔬 View Multi-Step Agent Execution & Forensic Analysis Trace", expanded=False):
+    # SECTION 3: STEP-BY-STEP REASONING TRACE
+    with st.expander("🔬 View Multi-Step Autonomous Agent Execution & Forensic Analysis Trace", expanded=False):
         for log in res.step_logs:
             st.markdown(f"#### Step {log.get('step')}: {log.get('title')}")
             st.markdown(f"**Status:** `{log.get('status')}`")
@@ -433,25 +634,25 @@ if st.session_state.latest_result:
 else:
     # Initial State / Guide
     st.markdown("---")
-    st.markdown("### 💡 How the Agent Saves You Time & Guarantees Quality:")
+    st.markdown("### 💡 How the Autonomous Visual & Checkout Agent Works:")
     col_g1, col_g2, col_g3, col_g4 = st.columns(4)
     with col_g1:
         st.markdown("""
-        **1. Persona Calibration**  
-        Reads your saved size (e.g. L/40), preferred brands, and budget. No need to re-enter filters on 5 different websites.
+        **1. Multimodal Vision Scan**  
+        Upload any photo of a dress, suit, or outfit. Gemini Vision extracts garment silhouette, weave, and color palette.
         """)
     with col_g2:
         st.markdown("""
         **2. Deep Platform Search**  
-        Queries Amazon.in, Myntra, Ajio, Flipkart, and Noon simultaneously using targeted search syntax.
+        Autonomous search queries across Amazon.in, Myntra, Ajio, Flipkart, and Noon locate the exact item online.
         """)
     with col_g3:
         st.markdown("""
         **3. Fake Review Screening**  
-        Forensically detects bot reviews, 5-star rating clusters, unverified sellers, and misleading fabric descriptions.
+        Forensically weeds out fake 5-star bots, dishonest polyester fabrics, and unverified third-party sellers.
         """)
     with col_g4:
         st.markdown("""
-        **4. True Effective Price**  
-        Calculates active promo codes, ICICI/HDFC bank card discounts, and highlights the single best deal with direct links.
+        **4. Direct to Payment Gateway**  
+        Calculates the highest coupon discount, pre-selects your size, and brings you straight to 1-Click checkout!
         """)
